@@ -1,4 +1,4 @@
-package org.fossify.calculator.helpers.parsing
+package com.example.bettercalc.parsing
 
 import com.example.bettercalc.parsing.TokenType
 
