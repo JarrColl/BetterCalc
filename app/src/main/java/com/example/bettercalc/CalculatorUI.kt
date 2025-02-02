@@ -117,7 +117,7 @@ fun CalculatorButtons(viewModel: CalculatorViewModel) {
             CalculatorButton("0", color = digitTextColor, modifier = buttonModifier(digitBgColor)) { viewModel.handleDigit('0') }
             CalculatorButton(".", color = digitTextColor, modifier = buttonModifier(digitBgColor)) { viewModel.handleOperator('.') }
             CalculatorButton("C", color = operandTextColor, modifier = buttonModifier(operandBgColor), onLongClickHandler = { viewModel.reset() }) { viewModel.backspace() }
-            CalculatorButton("=", color = MaterialTheme.colorScheme.onPrimaryContainer, modifier = buttonModifier(MaterialTheme.colorScheme.primaryContainer)) { viewModel.handleOperator('=') }
+            CalculatorButton("=", color = MaterialTheme.colorScheme.onPrimaryContainer, modifier = buttonModifier(MaterialTheme.colorScheme.primaryContainer)) { viewModel.handleEquals() }
         }
     }
 }

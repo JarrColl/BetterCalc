@@ -2,14 +2,16 @@ package com.example.bettercalc
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import com.example.bettercalc.parsing.Parser
 
 private const val nonChainableOperators = "+-×÷^√"
+private val parser = Parser()
 
 class CalculatorViewModel : ViewModel() {
     val formula = mutableStateOf("")
 
     fun backspace() {
-        formula.value = formula.value.substring(0, formula.value.length - 1)
+        formula.value = formula.value.dropLast(1)
     }
 
     fun reset() {
@@ -20,42 +22,60 @@ class CalculatorViewModel : ViewModel() {
         formula.value += digit
     }
 
-    fun handleOperator(symbol: Char) {
-        if (formula.value[formula.value.length - 1] in nonChainableOperators) {
-            formula.value = formula.value.substring(0, formula.value.length - 1)
-        }
-        when (symbol) {
-            '+' -> {
-                formula.value += '+'
-            }
+    fun handleEquals() {
+        formula.value = parser.calculate(formula.value).toString().trim('0').trim('.')
+    }
 
-            '-' -> {
-                formula.value += '-'
-            }
+    fun handleOperator(symbol: Char) { // TODO: Make this function less trash
+        if (formula.value.isNotEmpty()) {
+            if (formula.value.last() in nonChainableOperators) {
+                // '-' is allowed to be the first character. This must be done to prevent the initial '-' from being replaced by another operator and causing a format error.
+                if (formula.value.length == 1 && formula.value[0] == '-') {
+                    return
+                }
 
-            '×' -> {
-                formula.value += '×'
-            }
-
-            '÷' -> {
-                formula.value += '÷'
-            }
-
-            '^' -> {
-                formula.value += '^'
-            }
-
-            '%' -> {
-                if (formula.value[formula.value.length - 1] != '%') {
-                    formula.value += '%'
+                if (symbol != '-' || (formula.value[formula.value.lastIndex] == '-')) {
+                    formula.value = formula.value.dropLast(1) //TODO: Does this cause a recomposition before the rest finishes? resulting in 2 recompositions?
                 }
             }
 
-            '√' -> {
-                formula.value += '√'
-            }
+            when (symbol) {
+                '+' -> {
+                    formula.value += '+'
+                }
 
-            else -> throw Exception("Unreachable: Unexpected symbol encountered.")
+                '-' -> {
+                    formula.value += '-'
+                }
+
+                '×' -> {
+                    formula.value += '×'
+                }
+
+                '÷' -> {
+                    formula.value += '÷'
+                }
+
+                '^' -> {
+                    formula.value += '^'
+                }
+
+                '%' -> {
+                    if (formula.value.last() != '%') {
+                        formula.value += '%'
+                    }
+                }
+
+                '√' -> {
+                    formula.value += '√'
+                }
+
+                else -> throw Exception("Unreachable: Unexpected symbol encountered.")
+            }
+        } else {
+            if (symbol == '-') {
+                formula.value += '-'
+            }
         }
     }
 }
