@@ -1,3 +1,4 @@
 .idea
 .gradle
 kls_database.db
+local.properties

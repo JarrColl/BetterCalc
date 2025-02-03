@@ -4,7 +4,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import com.example.bettercalc.parsing.Parser
 
-private const val nonChainableOperators = "+-×÷^√"
+private const val nonChainableOperators = "+-×÷^√."
 private val parser = Parser()
 
 class CalculatorViewModel : ViewModel() {
@@ -23,9 +23,12 @@ class CalculatorViewModel : ViewModel() {
     }
 
     fun handleEquals() {
-        formula.value = parser.calculate(formula.value).toString().trim('0').trim('.')
+        formula.value = parser.calculate(formula.value).toString().trimEnd('0').trimEnd('.')
     }
 
+    //TODO prevent output like 86.39999999999999999999999999999999
+    //TODO prevent this issue: "3"->"x"->"-"->"x" = "3xx"
+    //TODO Prevent chaining of decimal like 3.4.5.6.2
     fun handleOperator(symbol: Char) { // TODO: Make this function less trash
         if (formula.value.isNotEmpty()) {
             if (formula.value.last() in nonChainableOperators) {
@@ -35,7 +38,8 @@ class CalculatorViewModel : ViewModel() {
                 }
 
                 if (symbol != '-' || (formula.value[formula.value.lastIndex] == '-')) {
-                    formula.value = formula.value.dropLast(1) //TODO: Does this cause a recomposition before the rest finishes? resulting in 2 recompositions?
+                    formula.value =
+                        formula.value.dropLast(1) //TODO: Does this cause a recomposition before the rest finishes? resulting in 2 recompositions?
                 }
             }
 
@@ -63,6 +67,14 @@ class CalculatorViewModel : ViewModel() {
                 '%' -> {
                     if (formula.value.last() != '%') {
                         formula.value += '%'
+                    }
+                }
+
+                '.' -> {
+                    if (formula.value.last() == '%') {
+                        formula.value = formula.value.dropLast(1) + "."
+                    } else {
+                        formula.value += "."
                     }
                 }
 

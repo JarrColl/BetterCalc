@@ -1,7 +1,5 @@
 package com.example.bettercalc.parsing
 
-import com.example.bettercalc.parsing.TokenType
-
 /*
 1. DIGIT
 2. OPERATOR
@@ -48,39 +46,31 @@ class Parser() {
     private fun match(vararg tokenTypes: TokenType): Boolean {
         for (tokenType in tokenTypes) {
             if (checkTokenType(tokenType)) {
+                advance()
                 return true
             }
         }
         return false
     }
 
-    // TODO: THIS IS YUCKY FIX IT.
-    private fun matchAdvance(vararg tokenTypes: TokenType): Boolean {
-        if(match(*tokenTypes)) {
-            advance()
-            return true
-        }
-        return false
-    }
-
     private fun primary(): Expression {
-        if (matchAdvance(TokenType.DIGIT)) {
+        if (this.match(TokenType.DIGIT)) {
             return LiteralExpression(previous().literal!!) //TODO: Handle this null case??
         }
 
-        throw Exception("Expected a primary expression") //TODO: Handle this?
+        throw Exception("Expected a primary expression, but found: ${previous().tokenType.toString()}") //TODO: Handle this?
     }
 
     private fun unarySuffix(): Expression {
         val expr = primary()
-        if(matchAdvance(TokenType.PERCENT)) {
+        if(this.match(TokenType.PERCENT)) {
             return UnaryExpression(previous().tokenType, expr)
         }
         return expr
     }
 
     private fun unaryPrefix(): Expression {
-        if (matchAdvance(TokenType.MINUS)) {
+        if (this.match(TokenType.MINUS)) {
             val operator = previous().tokenType
             val right = primary()
             return UnaryExpression(operator, right)
@@ -89,13 +79,36 @@ class Parser() {
         return unarySuffix()
     }
 
-    private fun operator(): Expression {
-        val expr = unaryPrefix() //TODO: HANDLE expressions like 3% + 20
+    private fun order(): Expression {
+        val expr = unaryPrefix()
 
-        if (matchAdvance(TokenType.PLUS, TokenType.MINUS, TokenType.MULTIPLY, TokenType.DIVIDE, TokenType.PERCENT, TokenType.POWER, TokenType.ROOT)) {
+        if (this.match(TokenType.POWER, TokenType.ROOT)) {
             var operator = previous().tokenType
             val right = unaryPrefix()
-            if (right.fetchOperator() == TokenType.PERCENT) {
+            return BinaryExpression(expr, operator, right)
+        }
+        return expr
+    }
+
+
+    private fun factor(): Expression {
+        val expr = order()
+
+        if (this.match(TokenType.MULTIPLY, TokenType.DIVIDE, TokenType.PERCENT)) {
+            var operator = previous().tokenType
+            val right = factor()
+            return BinaryExpression(expr, operator, right)
+        }
+        return expr
+    }
+
+    private fun term(): Expression {
+        val expr = factor()
+
+        if (this.match(TokenType.PLUS, TokenType.MINUS)) {
+            var operator = previous().tokenType
+            val right = term()
+            if (right.fetchOperator() == TokenType.PERCENT) { //TODO: Check this case: "2%2+2"
                 operator = when(operator) {
                     TokenType.PLUS -> TokenType.PLUS_PERCENT
                     TokenType.MINUS -> TokenType.MINUS_PERCENT
@@ -108,7 +121,13 @@ class Parser() {
     }
 
     private fun parse(): Expression {
-        return operator()
+        return term()
+    }
+
+    fun parseTesting(source: String): Expression {
+        resetParser()
+        tokens = tokeniser.tokenise(source)
+        return parse()
     }
 
     fun calculate(source: String): Double {
