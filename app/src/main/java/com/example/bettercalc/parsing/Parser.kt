@@ -6,6 +6,8 @@ package com.example.bettercalc.parsing
 3. DIGIT
 
  */
+//TODO: HANDLE scientific notation (E)
+//TODO: NEED TO calculate from left to right, perhaps by reversing the direction of the token list?
 
 class Parser() {
     private var tokeniser = Tokeniser()
@@ -59,6 +61,7 @@ class Parser() {
         }
 
         throw Exception("Expected a primary expression, but found: ${previous().tokenType.toString()}") //TODO: Handle this?
+        throw Exception("Expected a primary expression, but found: ${previous().tokenType}") //TODO: Handle this?
     }
 
     private fun unarySuffix(): Expression {

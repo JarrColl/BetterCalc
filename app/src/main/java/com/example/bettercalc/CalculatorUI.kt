@@ -4,7 +4,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -12,8 +11,13 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,6 +30,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.bettercalc.ui.theme.BetterCalcTheme
 import kotlinx.coroutines.launch
+
+enum class AutoScrollLocation() {
+    END, START,
+}
 
 @Preview(showBackground = true)
 @Composable
@@ -40,7 +48,8 @@ fun CalculatorPreview() {
 //TODO: Handle divide by zero errors.
 @Composable
 fun CalculatorUI(viewModel: CalculatorViewModel) {
-    val displayLazyRowState = rememberLazyListState()
+    var autoScrollLocation by remember { mutableStateOf(AutoScrollLocation.END) }
+
     Box(
         Modifier
             .fillMaxSize()
@@ -51,31 +60,62 @@ fun CalculatorUI(viewModel: CalculatorViewModel) {
         ) {
             CalculatorOutputDisplay(
                 screenText = viewModel.formula.value,
-                displayLazyRowState = displayLazyRowState,
+                autoScrollLocation = autoScrollLocation,
                 modifier = Modifier
                     .height(150.dp)
                     .fillMaxWidth()
                     .padding(horizontal = 8.dp, vertical = 32.dp)
             )
             HorizontalDivider(Modifier.padding(vertical = 15.dp))
-            CalculatorButtons(viewModel, displayLazyRowState)
+            CalculatorButtons(viewModel,
+                setAutoScrollLocation = { newDirection -> autoScrollLocation = newDirection })
         }
     }
 }
 
 @Composable
 fun CalculatorOutputDisplay(
-    screenText: String, displayLazyRowState: LazyListState, modifier: Modifier
+    screenText: String, autoScrollLocation: AutoScrollLocation, modifier: Modifier
 ) {
     // TODO: on button press, reset the scroll of this to the end.
+    val displayLazyRowState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
 
-    println("output parent recomposed")
+    LaunchedEffect(screenText) {
+        when (autoScrollLocation) {
+            AutoScrollLocation.END -> {
+                withFrameNanos {
+                    displayLazyRowState.layoutInfo.visibleItemsInfo.firstOrNull()?.let { item ->
+                        val offset =
+                            (item.size - displayLazyRowState.layoutInfo.viewportSize.width).coerceAtLeast(
+                                0
+                            )
+                        coroutineScope.launch {
+                            displayLazyRowState.scrollToItem(0, -offset)
+//                            displayLazyRowState.scrollToItem(0)
+                        }
+                    }
+                }
+            }
+
+            AutoScrollLocation.START -> {
+                println("START")
+                displayLazyRowState.layoutInfo.visibleItemsInfo.firstOrNull()?.let { item ->
+                    val offset =
+                        (item.size - displayLazyRowState.layoutInfo.viewportSize.width).coerceAtLeast(
+                            0
+                        )
+                    displayLazyRowState.scrollToItem(0, offset)
+                }
+            }
+        }
+
+    }
+
     LazyRow(
-        reverseLayout = false, state = displayLazyRowState, modifier = modifier
+        reverseLayout = true, state = displayLazyRowState, modifier = modifier
     ) {
-        println("lazyrow recomposed")
         item {
-            println("lazyrow item recomposed")
             Text(
                 screenText,
                 fontSize = 80.sp,
@@ -92,7 +132,9 @@ fun CalculatorOutputDisplay(
 // TODO: Remove need to type in the unicode math symbols and passing them around by using ascii chars or enum.
 // TODO: Reduce number of places that need to be changed to add a new button/symbol.
 @Composable
-fun CalculatorButtons(viewModel: CalculatorViewModel, displayLazyRowState: LazyListState) {
+fun CalculatorButtons(
+    viewModel: CalculatorViewModel, setAutoScrollLocation: (AutoScrollLocation) -> Unit
+) {
     val buttonSpacing = 8.dp
     val digitBgColor = MaterialTheme.colorScheme.surfaceContainer
     val digitTextColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -110,146 +152,120 @@ fun CalculatorButtons(viewModel: CalculatorViewModel, displayLazyRowState: LazyL
                 .clip(CircleShape)
                 .background(color)
         }
+
         Row(
             horizontalArrangement = Arrangement.spacedBy(buttonSpacing),
             modifier = Modifier.fillMaxWidth()
         ) {
-            CalculatorButton(
-                "%",
-                color = operandTextColor,
-                displayLazyRowState = displayLazyRowState,
-                modifier = buttonModifier(operandBgColor)
-            ) { viewModel.handleOperator('%') }
-            CalculatorButton(
-                "^",
-                color = operandTextColor,
-                displayLazyRowState = displayLazyRowState,
-                modifier = buttonModifier(operandBgColor)
-            ) { viewModel.handleOperator('^') }
-            CalculatorButton(
-                "√",
-                color = operandTextColor,
-                displayLazyRowState = displayLazyRowState,
-                modifier = buttonModifier(operandBgColor)
-            ) { viewModel.handleOperator('√') }
-            CalculatorButton(
-                "÷",
-                color = operandTextColor,
-                displayLazyRowState = displayLazyRowState,
-                modifier = buttonModifier(operandBgColor)
-            ) { viewModel.handleOperator('÷') }
+            listOf("%", "^", "√", "÷").forEach { symbol ->
+                CalculatorButton(
+                    symbol,
+                    color = operandTextColor,
+                    modifier = buttonModifier(operandBgColor),
+                    onClickHandler = {
+                        setAutoScrollLocation(AutoScrollLocation.END)
+                        viewModel.handleOperator(symbol)
+                    },
+                )
+            }
         }
         Row(
             horizontalArrangement = Arrangement.spacedBy(buttonSpacing),
             modifier = Modifier.fillMaxWidth()
         ) {
+            listOf("7", "8", "9").forEach { symbol ->
+                CalculatorButton(
+                    symbol, color = digitTextColor,
+                    modifier = buttonModifier(digitBgColor),
+                    onClickHandler = {
+                        setAutoScrollLocation(AutoScrollLocation.END)
+                        viewModel.handleDigit(symbol)
+                    },
+                )
+            }
             CalculatorButton(
-                "7",
-                color = digitTextColor,
-                displayLazyRowState = displayLazyRowState,
-                modifier = buttonModifier(digitBgColor)
-            ) { viewModel.handleDigit('7') }
-            CalculatorButton(
-                "8",
-                color = digitTextColor,
-                displayLazyRowState = displayLazyRowState,
-                modifier = buttonModifier(digitBgColor)
-            ) { viewModel.handleDigit('8') }
-            CalculatorButton(
-                "9",
-                color = digitTextColor,
-                displayLazyRowState = displayLazyRowState,
-                modifier = buttonModifier(digitBgColor)
-            ) { viewModel.handleDigit('9') }
-            CalculatorButton(
-                "×",
-                color = operandTextColor,
-                displayLazyRowState = displayLazyRowState,
-                modifier = buttonModifier(operandBgColor)
-            ) { viewModel.handleOperator('×') }
+                "×", color = operandTextColor,
+                modifier = buttonModifier(operandBgColor),
+                onClickHandler = {
+                    setAutoScrollLocation(AutoScrollLocation.END)
+                    viewModel.handleOperator("×")
+                },
+            )
         }
         Row(
             horizontalArrangement = Arrangement.spacedBy(buttonSpacing),
             modifier = Modifier.fillMaxWidth()
         ) {
-            CalculatorButton(
-                "4",
-                color = digitTextColor,
-                displayLazyRowState = displayLazyRowState,
-                modifier = buttonModifier(digitBgColor)
-            ) { viewModel.handleDigit('4') }
-            CalculatorButton(
-                "5",
-                color = digitTextColor,
-                displayLazyRowState = displayLazyRowState,
-                modifier = buttonModifier(digitBgColor)
-            ) { viewModel.handleDigit('5') }
-            CalculatorButton(
-                "6",
-                color = digitTextColor,
-                displayLazyRowState = displayLazyRowState,
-                modifier = buttonModifier(digitBgColor)
-            ) { viewModel.handleDigit('6') }
+            listOf("4", "5", "6").forEach { symbol ->
+                CalculatorButton(
+                    symbol, color = digitTextColor,
+                    modifier = buttonModifier(digitBgColor),
+                    onClickHandler = {
+                        setAutoScrollLocation(AutoScrollLocation.END)
+                        viewModel.handleDigit(symbol)
+                    },
+                )
+            }
             CalculatorButton(
                 "-",
                 color = operandTextColor,
-                displayLazyRowState = displayLazyRowState,
-                modifier = buttonModifier(operandBgColor)
-            ) { viewModel.handleOperator('-') }
-        }
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(buttonSpacing),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            CalculatorButton(
-                "1",
-                color = digitTextColor,
-                displayLazyRowState = displayLazyRowState,
-                modifier = buttonModifier(digitBgColor)
-            ) { viewModel.handleDigit('1') }
-            CalculatorButton(
-                "2",
-                color = digitTextColor,
-                displayLazyRowState = displayLazyRowState,
-                modifier = buttonModifier(digitBgColor)
-            ) { viewModel.handleDigit('2') }
-            CalculatorButton(
-                "3",
-                color = digitTextColor,
-                displayLazyRowState = displayLazyRowState,
-                modifier = buttonModifier(digitBgColor)
-            ) { viewModel.handleDigit('3') }
-            CalculatorButton(
-                "+",
-                color = operandTextColor,
-                displayLazyRowState = displayLazyRowState,
-                modifier = buttonModifier(operandBgColor)
-            ) { viewModel.handleOperator('+') }
-        }
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(buttonSpacing),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            CalculatorButton(
-                "0",
-                color = digitTextColor,
-                displayLazyRowState = displayLazyRowState,
-                modifier = buttonModifier(digitBgColor)
-            ) { viewModel.handleDigit('0') }
-            CalculatorButton(
-                ".",
-                color = digitTextColor,
-                displayLazyRowState = displayLazyRowState,
-                modifier = buttonModifier(digitBgColor)
-            ) { viewModel.handleOperator('.') }
-            CalculatorButton("C",
-                color = operandTextColor, displayLazyRowState = displayLazyRowState,
                 modifier = buttonModifier(operandBgColor),
-                onLongClickHandler = { viewModel.reset() }) { viewModel.backspace() }
+                onClickHandler = {
+                    setAutoScrollLocation(AutoScrollLocation.END)
+                    viewModel.handleOperator("-")
+                },
+            )
+        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(buttonSpacing),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            listOf("1", "2", "3").forEach { symbol ->
+                CalculatorButton(symbol,
+                    color = digitTextColor,
+                    modifier = buttonModifier(digitBgColor),
+                    onClickHandler = {
+                        setAutoScrollLocation(AutoScrollLocation.END)
+                        viewModel.handleDigit(symbol)
+                    })
+            }
+            CalculatorButton(
+                "+", color = operandTextColor, modifier = buttonModifier(operandBgColor),
+                onClickHandler = {
+                    setAutoScrollLocation(AutoScrollLocation.END)
+                    viewModel.handleOperator("+")
+                },
+            )
+        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(buttonSpacing),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            CalculatorButton(
+                "0", color = digitTextColor, modifier = buttonModifier(digitBgColor),
+                onClickHandler = {
+                    setAutoScrollLocation(AutoScrollLocation.END)
+                    viewModel.handleDigit("0")
+                },
+            )
+            CalculatorButton(
+                ".", color = digitTextColor, modifier = buttonModifier(digitBgColor)
+            ) { viewModel.handleOperator(".") }
+            CalculatorButton("C",
+                color = operandTextColor,
+                modifier = buttonModifier(operandBgColor),
+                onClickHandler = {
+                    setAutoScrollLocation(AutoScrollLocation.END)
+                    viewModel.backspace()
+                },
+                onLongClickHandler = { viewModel.reset() })
             CalculatorButton("=",
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = buttonModifier(MaterialTheme.colorScheme.primaryContainer),
-                onClickHandler = { viewModel.handleEquals() })
+                onClickHandler = {
+                    setAutoScrollLocation(AutoScrollLocation.START)
+                    viewModel.handleEquals()
+                })
         }
     }
 }
@@ -259,31 +275,21 @@ fun CalculatorButtons(viewModel: CalculatorViewModel, displayLazyRowState: LazyL
 private fun CalculatorButton(
     symbol: String,
     color: Color = Color.Black,
-    displayLazyRowState: LazyListState? = null,
     modifier: Modifier = Modifier,
     onLongClickHandler: (() -> Unit)? = null,
     onClickHandler: () -> Unit
 ) {
-    println("recomposed")
-//    val coroutineScope = rememberCoroutineScope() //dsjf;lajfl;ksadjfdsajfjaofewopirupowquowjfasdn,mnvclf;wejfl;wjelkjflkadfjoiqw
     val haptics = LocalHapticFeedback.current
-    Box(contentAlignment = Alignment.Center,
-        modifier = modifier.combinedClickable(onClick = if (displayLazyRowState == null) {
-            { onClickHandler() }
-        } else {
-            {
-                onClickHandler()
-//                coroutineScope.launch {
-//                    displayLazyRowState.scrollToItem(0, scrollOffset = 99999)
-//                }
-            }
-        }, onLongClick = onLongClickHandler?.let { handler ->
-            {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                handler()
-            }
-        }, onLongClickLabel = if (onLongClickHandler != null) "Reset Display" else null
-        )
+    Box(contentAlignment = Alignment.Center, modifier = modifier.combinedClickable(onClick = {
+        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        onClickHandler()
+    }, onLongClick = onLongClickHandler?.let { handler ->
+        {
+            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+            handler()
+        }
+    }, onLongClickLabel = if (onLongClickHandler != null) "Reset Display" else null
+    )
     ) {
         Text(symbol, fontSize = 40.sp, color = color)
     }

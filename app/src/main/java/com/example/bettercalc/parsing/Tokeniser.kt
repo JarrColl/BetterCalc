@@ -32,16 +32,34 @@ class Tokeniser {
 
         when (c) {
             in '0'..'9' -> consumeNumber()
+            in 'a'..'z' -> consumeNamedOperator()
             '+' -> addToken(TokenType.PLUS)
             '-' -> addToken(TokenType.MINUS)
-            '×' -> addToken(TokenType.MULTIPLY)
-            '÷' -> addToken(TokenType.DIVIDE)
+            '*' -> addToken(TokenType.MULTIPLY)
+            '/' -> addToken(TokenType.DIVIDE)
             '^' -> addToken(TokenType.POWER)
             '%' -> addToken(TokenType.PERCENT)
             '√' -> addToken(TokenType.ROOT)
             else -> throw Exception("Unknown Lexeme Found")
         }
 
+    }
+
+    private fun isLetter(char: Char?): Boolean {
+        return char in 'a'..'z'
+    }
+
+    private fun consumeNamedOperator() {
+        start = current - 1
+
+        while (isLetter(peekCurrent())) {
+            advance()
+        }
+
+        when(source.substring(start, current)) {
+            "sqrt" -> addToken(TokenType.ROOT)
+            else -> throw Exception("Unreachable: Unexpected Named Operator.")
+        }
     }
 
     private fun addToken(tokenType: TokenType) {
