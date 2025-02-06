@@ -6,7 +6,7 @@ class UnaryExpression(val operator: TokenType, val right: Expression) : Expressi
     override fun calculate(): BigDecimal {
         return when (operator) {
             TokenType.MINUS -> -right.calculate()
-            TokenType.PERCENT -> right.calculate() / BigDecimal("100.0")
+            TokenType.PERCENT -> right.calculate().divide(BigDecimal("100.0"))
             else -> throw Exception("Unexpected Unary Operator")
         }
     }
