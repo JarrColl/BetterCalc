@@ -1,9 +1,9 @@
 package com.example.bettercalc.parsing
 
-import com.example.bettercalc.parsing.TokenType
+import java.math.BigDecimal
 
-class LiteralExpression(val value: Double): Expression() {
-    override fun calculate(): Double {
+class LiteralExpression(val value: BigDecimal): Expression() {
+    override fun calculate(): BigDecimal {
         return value
     }
 

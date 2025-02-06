@@ -1,6 +1,7 @@
 package com.example.bettercalc.parsing
 
 import com.example.bettercalc.parsing.TokenType
+import java.math.BigDecimal
 
 //TODO: handle the alternate variant of decimal = , instead of .
 class Tokeniser {
@@ -39,7 +40,6 @@ class Tokeniser {
             '/' -> addToken(TokenType.DIVIDE)
             '^' -> addToken(TokenType.POWER)
             '%' -> addToken(TokenType.PERCENT)
-            '√' -> addToken(TokenType.ROOT)
             else -> throw Exception("Unknown Lexeme Found")
         }
 
@@ -66,7 +66,7 @@ class Tokeniser {
         addTokenWithLiteral(tokenType, null)
     }
 
-    private fun addTokenWithLiteral(tokenType: TokenType, literal: Double?) {
+    private fun addTokenWithLiteral(tokenType: TokenType, literal: BigDecimal?) {
         tokens += Token(tokenType, literal)
     }
 
@@ -84,7 +84,7 @@ class Tokeniser {
             }
         }
 
-        addTokenWithLiteral(TokenType.DIGIT, source.substring(start, current).toDouble())
+        addTokenWithLiteral(TokenType.DIGIT, BigDecimal(source.substring(start, current)))
     }
 
     private fun peekCurrent(): Char? {

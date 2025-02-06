@@ -1,12 +1,12 @@
 package com.example.bettercalc.parsing
 
-import com.example.bettercalc.parsing.TokenType
+import java.math.BigDecimal
 
 class UnaryExpression(val operator: TokenType, val right: Expression) : Expression() {
-    override fun calculate(): Double {
+    override fun calculate(): BigDecimal {
         return when (operator) {
             TokenType.MINUS -> -right.calculate()
-            TokenType.PERCENT -> right.calculate() / 100
+            TokenType.PERCENT -> right.calculate() / BigDecimal("100.0")
             else -> throw Exception("Unexpected Unary Operator")
         }
     }

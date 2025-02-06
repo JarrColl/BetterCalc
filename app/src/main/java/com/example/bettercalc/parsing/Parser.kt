@@ -1,11 +1,7 @@
 package com.example.bettercalc.parsing
 
-/*
-1. DIGIT
-2. OPERATOR
-3. DIGIT
+import java.math.BigDecimal
 
- */
 //TODO: HANDLE scientific notation (E)
 //TODO: NEED TO calculate from left to right, perhaps by reversing the direction of the token list?
 
@@ -60,7 +56,6 @@ class Parser() {
             return LiteralExpression(previous().literal!!) //TODO: Handle this null case??
         }
 
-        throw Exception("Expected a primary expression, but found: ${previous().tokenType.toString()}") //TODO: Handle this?
         throw Exception("Expected a primary expression, but found: ${previous().tokenType}") //TODO: Handle this?
     }
 
@@ -133,7 +128,7 @@ class Parser() {
         return parse()
     }
 
-    fun calculate(source: String): Double {
+    fun calculate(source: String): BigDecimal {
         resetParser()
         tokens = tokeniser.tokenise(source)
         val head = parse()

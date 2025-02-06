@@ -23,16 +23,19 @@ class CalculatorViewModel : ViewModel() {
     }
 
     fun handleEquals() {
-        val asciiFormula = formula.value.replace(Regex("[×÷√]")) {
-            when(it.value) {
-                "×" -> "*"
-                "÷" -> "/"
-                "√" -> "sqrt"
-                else -> throw Exception("Unreachable")
+        if (formula.value != "") {
+            val asciiFormula = formula.value.replace(Regex("[×÷√]")) {
+                when(it.value) {
+                    "×" -> "*"
+                    "÷" -> "/"
+                    "√" -> "sqrt"
+                    else -> throw Exception("Unreachable")
+                }
             }
+            formula.value = parser.calculate(asciiFormula).toString().trimEnd('0').trimEnd('.')
         }
-        formula.value = parser.calculate(asciiFormula).toString().trimEnd('0').trimEnd('.')
     }
+
 
     //TODO prevent output like 86.39999999999999999999999999999999
     //TODO prevent this issue: "3"->"x"->"-"->"x" = "3xx"
