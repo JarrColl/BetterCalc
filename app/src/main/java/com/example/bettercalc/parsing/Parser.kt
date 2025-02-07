@@ -33,6 +33,12 @@ class Parser() {
         return previous()
     }
 
+    private fun reverse() {
+        if (!isAtEnd()) {
+            current--
+        }
+    }
+
     private fun checkTokenType(tokenType: TokenType): Boolean {
         if (isAtEnd()) {
             return false
@@ -61,7 +67,12 @@ class Parser() {
 
     private fun unarySuffix(): Expression {
         val expr = primary()
-        if(this.match(TokenType.PERCENT)) {
+        if (this.match(TokenType.PERCENT)) {
+            if (peekCurrent().tokenType == TokenType.DIGIT) {
+                reverse()
+                return expr
+            }
+
             return UnaryExpression(previous().tokenType, expr)
         }
         return expr
@@ -70,7 +81,7 @@ class Parser() {
     private fun unaryPrefix(): Expression {
         if (this.match(TokenType.MINUS)) {
             val operator = previous().tokenType
-            val right = primary()
+            val right = unaryPrefix()
             return UnaryExpression(operator, right)
         }
 
@@ -78,42 +89,42 @@ class Parser() {
     }
 
     private fun order(): Expression {
-        val expr = unaryPrefix()
+        var expr = unaryPrefix()
 
-        if (this.match(TokenType.POWER, TokenType.ROOT)) {
+        while (this.match(TokenType.POWER, TokenType.ROOT)) {
             var operator = previous().tokenType
             val right = unaryPrefix()
-            return BinaryExpression(expr, operator, right)
+            expr = BinaryExpression(expr, operator, right)
         }
         return expr
     }
 
 
     private fun factor(): Expression {
-        val expr = order()
+        var expr = order()
 
-        if (this.match(TokenType.MULTIPLY, TokenType.DIVIDE, TokenType.PERCENT)) {
+        while (this.match(TokenType.MULTIPLY, TokenType.DIVIDE, TokenType.PERCENT)) {//|| expr.fetchOperator() == TokenType.PERCENT) {
             var operator = previous().tokenType
-            val right = factor()
-            return BinaryExpression(expr, operator, right)
+            val right = order()
+            expr = BinaryExpression(expr, operator, right)
         }
         return expr
     }
 
     private fun term(): Expression {
-        val expr = factor()
+        var expr = factor()
 
-        if (this.match(TokenType.PLUS, TokenType.MINUS)) {
+        while (this.match(TokenType.PLUS, TokenType.MINUS)) {
             var operator = previous().tokenType
-            val right = term()
-            if (right.fetchOperator() == TokenType.PERCENT) { //TODO: Check this case: "2%2+2"
-                operator = when(operator) {
+            val right = factor()
+            if (right.fetchOperator() == TokenType.PERCENT && right is UnaryExpression) { //TODO: Check this case: "2%2+2"
+                operator = when (operator) {
                     TokenType.PLUS -> TokenType.PLUS_PERCENT
                     TokenType.MINUS -> TokenType.MINUS_PERCENT
-                    else-> operator
+                    else -> operator
                 }
             }
-            return BinaryExpression(expr, operator, right)
+            expr = BinaryExpression(expr, operator, right)
         }
         return expr
     }

@@ -21,6 +21,14 @@ class CalculatorViewModel : ViewModel() {
         formula.value += digit
     }
 
+    private fun cleanResultString(result: String): String {
+        if ('.' in result) {
+            return result.trimEnd('0').trimEnd('.')
+        } else {
+            return result
+        }
+    }
+
     fun handleEquals() {
         if (formula.value != "") {
             val asciiFormula = formula.value.replace(Regex("[×÷√]")) {
@@ -31,7 +39,7 @@ class CalculatorViewModel : ViewModel() {
                     else -> throw Exception("Unreachable")
                 }
             }
-            formula.value = parser.calculate(asciiFormula).toString().trimEnd('0').trimEnd('.')
+            formula.value = cleanResultString(parser.calculate(asciiFormula).toString())
         }
     }
 

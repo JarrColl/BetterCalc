@@ -44,6 +44,7 @@ class BinaryExpression(val left: Expression, val operator: TokenType, val right:
             TokenType.PLUS -> leftDecimal.add(rightDecimal, mc)
             TokenType.MINUS -> leftDecimal.subtract(rightDecimal, mc)
             TokenType.MULTIPLY -> leftDecimal.multiply(rightDecimal, mc)
+            TokenType.PERCENT -> leftDecimal.divide(BigDecimal("100.0")).multiply(rightDecimal, mc)
             TokenType.DIVIDE -> leftDecimal.divide(rightDecimal, mc)
             TokenType.POWER -> leftDecimal.pow(rightDecimal)
             TokenType.ROOT -> leftDecimal * (rightDecimal.pow(BigDecimal(0.5)))
