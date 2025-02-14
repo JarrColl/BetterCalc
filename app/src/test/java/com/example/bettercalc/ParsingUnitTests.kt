@@ -19,110 +19,97 @@ class ParsingUnitTests {
     var answer = BigDecimal.ZERO
     val viewModel = CalculatorViewModel()
 
+    fun viewModelCalculate(equation: String): String {
+        viewModel.formula.value = equation
+        viewModel.handleEquals()
+        return viewModel.formula.value
+    }
+
     @Test
     fun basicSqrtOperator() {
-        answer = parser.calculate("1sqrt4")
-        assertEquals(BigDecimal(2.0), answer)
+        assertEquals("2", viewModelCalculate("1sqrt4"))
     }
 
     @Test
     fun percentAsOperator() {
-        answer = parser.calculate("2%2")
-        assertEquals(BigDecimal("0.04"), answer)
+        assertEquals("0.04", viewModelCalculate("2%2"))
     }
 
     @Test
     fun digitPercentResult() {
-        answer = parser.calculate("2%")
-        assertEquals(BigDecimal("0.02"), answer)
+        assertEquals("0.02", viewModelCalculate("2%"))
     }
 
     @Test
     fun percentBeforeAnOperator() {
-        answer = parser.calculate("10%-1")
-        assertEquals(BigDecimal("-0.9"), answer)
+        assertEquals("-0.9", viewModelCalculate("10%-1"))
     }
 
     @Test
     fun floatPrecisionTest() {
-        answer = parser.calculate("3*4/5")
-        assertEquals(BigDecimal("2.4"), answer)
+        assertEquals("2.4", viewModelCalculate("3*4/5"))
     }
 
     @Test
     fun inverseByDivision() {
-        answer = parser.calculate("1/3")
-        assertEquals(BigDecimal("0.3333333333333333"), answer)
+        assertEquals("0.3333333333333333", viewModelCalculate("1/3"))
     }
 
     @Test
     fun leftAssociativityResult() {
-        answer = parser.calculate("1/3*2")
-        assertEquals(BigDecimal("0.6666666666666666"), answer)
+        assertEquals("0.6666666666666666", viewModelCalculate("1/3*2"))
     }
 
     @Test
     fun negativePercentPlusInt() {
-        answer = parser.calculate("-10%+1")
-        assertEquals(BigDecimal("0.9"), answer)
+        assertEquals("0.9", viewModelCalculate("-10%+1"))
     }
 
     @Test
     fun negativePercentMultiplyInt() {
-        answer = parser.calculate("-20%*4")
-        assertEquals(BigDecimal("-0.8"), answer)
+        assertEquals("-0.8", viewModelCalculate("-20%*4"))
     }
 
     @Test
     fun scientificNotationImplemented() {
-        answer = parser.calculate("-10%+1")
-        assertEquals(BigDecimal(-0.12309472391847091328479), answer)
+        //TODO
+        assertEquals("-0.12309472391847091328479", viewModelCalculate("5%5"))
     }
 
     @Test
     fun plusMultiplyBodmas() {
-        answer = parser.calculate("1*2+9")
-        assertEquals(BigDecimal(11.0), answer)
+        assertEquals("11", viewModelCalculate("1*2+9"))
 
-        answer = parser.calculate("9+1*2")
-        assertEquals(BigDecimal(11.0), answer)
+        assertEquals("11", viewModelCalculate("9+1*2"))
     }
 
     @Test
     fun twoDigitPercent() {
-        answer = parser.calculate("12%")
-        assertEquals(BigDecimal("0.12"), answer)
+        assertEquals("0.12", viewModelCalculate("12%"))
     }
 
     @Test
     fun percentAsOperator1() {
-        answer = parser.calculate("5%5")
-        assertEquals(BigDecimal(0.25), answer)
+        assertEquals("0.25", viewModelCalculate("5%5"))
     }
     @Test
     fun percentAsOperator2() {
-        answer = parser.calculate("10+10%5")
-        assertEquals(BigDecimal("10.5"), answer)
+        assertEquals("10.5", viewModelCalculate("10+10%5"))
     }
     @Test
     fun percentAsOperator4() {
-        answer = parser.calculate("10%10%10%10%")
-        assertEquals(BigDecimal("0.0001"), answer)
+        assertEquals("0.0001", viewModelCalculate("10%10%10%10%"))
     }
 
 /*** CalculatorViewModel CALCULATION RESULT UNIT TESTS***/
     @Test
     fun trimZerosWhenNoDecimal() {
-        viewModel.formula.value = "10+10"
-        viewModel.handleEquals()
-        assertEquals("20", viewModel.formula.value)
+        assertEquals("20", viewModelCalculate("10+10"))
     }
 
     @Test
     fun percentAsOperator3() {
-        viewModel.formula.value = "10%10%10%10"
-        viewModel.handleEquals()
-        assertEquals("0.01", viewModel.formula.value)
+        assertEquals("0.01", viewModelCalculate("10%10%10%10"))
     }
 
 
