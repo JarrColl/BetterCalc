@@ -3,8 +3,6 @@ package com.example.bettercalc.parsing
 import java.math.BigDecimal
 
 //TODO: HANDLE scientific notation (E)
-//TODO: NEED TO calculate from left to right, perhaps by reversing the direction of the token list?
-
 class Parser() {
     private var tokeniser = Tokeniser()
     private var tokens: List<Token> = emptyList()
@@ -59,10 +57,10 @@ class Parser() {
 
     private fun primary(): Expression {
         if (this.match(TokenType.DIGIT)) {
-            return LiteralExpression(previous().literal!!) //TODO: Handle this null case??
+            return LiteralExpression(previous().literal!!)
         }
 
-        throw Exception("Expected a primary expression, but found: ${previous().tokenType}") //TODO: Handle this?
+        throw Exception("Expected a primary expression, but found: ${previous().tokenType}")
     }
 
     private fun unarySuffix(): Expression {
@@ -117,7 +115,7 @@ class Parser() {
         while (this.match(TokenType.PLUS, TokenType.MINUS)) {
             var operator = previous().tokenType
             val right = factor()
-            if (right.fetchOperator() == TokenType.PERCENT && right is UnaryExpression) { //TODO: Check this case: "2%2+2"
+            if (right.fetchOperator() == TokenType.PERCENT && right is UnaryExpression) {
                 operator = when (operator) {
                     TokenType.PLUS -> TokenType.PLUS_PERCENT
                     TokenType.MINUS -> TokenType.MINUS_PERCENT

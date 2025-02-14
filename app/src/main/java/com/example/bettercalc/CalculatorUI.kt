@@ -77,7 +77,6 @@ fun CalculatorUI(viewModel: CalculatorViewModel) {
 fun CalculatorOutputDisplay(
     screenText: String, autoScrollLocation: AutoScrollLocation, modifier: Modifier
 ) {
-    // TODO: on button press, reset the scroll of this to the end.
     val displayLazyRowState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
@@ -92,7 +91,6 @@ fun CalculatorOutputDisplay(
                             )
                         coroutineScope.launch {
                             displayLazyRowState.scrollToItem(0, -offset)
-//                            displayLazyRowState.scrollToItem(0)
                         }
                     }
                 }
@@ -129,7 +127,6 @@ fun CalculatorOutputDisplay(
 }
 
 
-// TODO: Remove need to type in the unicode math symbols and passing them around by using ascii chars or enum.
 // TODO: Reduce number of places that need to be changed to add a new button/symbol.
 @Composable
 fun CalculatorButtons(
